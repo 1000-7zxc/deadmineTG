@@ -45,7 +45,7 @@ function getAdminMenu() {
     return {
         reply_markup: {
             keyboard: [
-                [{ text: '� Открытые тикеты' }, { text: '🔴 Закрытые тикеты' }],
+                [{ text: '🟢 Открытые тикеты' }],
                 [{ text: '🚫 Заблокированные пользователи' }],
                 [{ text: '📊 Статистика' }]
             ],
@@ -53,6 +53,7 @@ function getAdminMenu() {
         }
     };
 }
+
 
 // Меню в тикете для админа
 function getAdminTicketMenu(ticketId) {
@@ -238,34 +239,6 @@ bot.on('message', async (msg) => {
     }
 });
 
-// Кнопка "Закрытые тикеты"
-bot.on('message', async (msg) => {
-    if (msg.text === '🔴 Закрытые тикеты' && isAdmin(msg.chat.id)) {
-        const closedTickets = Array.from(tickets.entries()).filter(([, t]) => t.status === 'Закрыт');
-        
-        if (closedTickets.length === 0) {
-            bot.sendMessage(msg.chat.id, '📭 Нет закрытых тикетов', getAdminMenu());
-            return;
-        }
-        
-        let text = '🔴 Закрытые тикеты (последние 10):\n\n';
-        closedTickets.slice(-10).forEach(([ticketId, ticket]) => {
-            text += `🎫 #${ticketId} - ${ticket.username}\n`;
-            text += `💬 Сообщений: ${ticket.messages.length}\n\n`;
-        });
-        
-        const keyboard = [];
-        closedTickets.slice(-10).forEach(([ticketId]) => {
-            keyboard.push([{ text: `📂 Открыть тикет #${ticketId}`, callback_data: `admin_open_${ticketId}` }]);
-        });
-        keyboard.push([{ text: '🔙 Главное меню', callback_data: 'admin_main_menu' }]);
-        
-        bot.sendMessage(msg.chat.id, text, {
-            reply_markup: { inline_keyboard: keyboard }
-        });
-    }
-});
-
 // Кнопка "Заблокированные пользователи"
 bot.on('message', async (msg) => {
     if (msg.text === '🚫 Заблокированные пользователи' && isAdmin(msg.chat.id)) {
@@ -347,7 +320,7 @@ bot.on('message', async (msg) => {
     
     // Игнорируем команды и кнопки
     if (msg.text && (msg.text.startsWith('/') || 
-        ['📋 Ваши тикеты', '📧 Создать новый тикет', '🔙 Главное меню', '📋 Все тикеты', '📊 Статистика', '🟢 Открытые тикеты', '🔴 Закрытые тикеты', '🚫 Заблокированные пользователи'].includes(msg.text))) {
+        ['📋 Ваши тикеты', '📧 Создать новый тикет', '🔙 Главное меню', '📋 Все тикеты', '📊 Статистика', '🟢 Открытые тикеты', ' Заблокированные пользователи'].includes(msg.text))) {
         return;
     }
     
