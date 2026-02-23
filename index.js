@@ -20,6 +20,9 @@ const userActiveTickets = new Map();
 // Контекст админа: adminId -> { mode, ticketId }
 const adminContext = new Map();
 
+// Счётчик тикетов (начинается с 1)
+let ticketCounter = 1;
+
 console.log('🤖 Бот запущен!');
 
 // Функция очистки старых тикетов
@@ -197,7 +200,7 @@ bot.on('message', async (msg) => {
         }
         
         // Создание нового тикета
-        const ticketId = Date.now();
+        const ticketId = ticketCounter++;
         const username = msg.from.username ? `@${msg.from.username}` : msg.from.first_name;
         
         tickets.set(ticketId, {
