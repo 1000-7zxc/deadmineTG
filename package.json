@@ -1,0 +1,20 @@
+{
+  "name": "deadmine-telegram-bot",
+  "version": "1.0.0",
+  "description": "DeadMine Telegram Support Bot with Ticket System",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "keywords": ["telegram", "bot", "support", "tickets"],
+  "author": "DeadMine Team",
+  "license": "MIT",
+  "dependencies": {
+    "node-telegram-bot-api": "^0.66.0",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}
