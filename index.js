@@ -22,6 +22,33 @@ const adminContext = new Map();
 
 console.log('🤖 Бот запущен!');
 
+// Функция очистки старых тикетов
+function cleanupOldTickets() {
+    const threeDaysAgo = Date.now() - (3 * 24 * 60 * 60 * 1000);
+    let deletedCount = 0;
+    
+    for (const [ticketId, ticket] of tickets.entries()) {
+        if (ticket.createdAt < threeDaysAgo) {
+            tickets.delete(ticketId);
+            // Удаляем из активных тикетов пользователя
+            if (userActiveTickets.get(ticket.userId) === ticketId) {
+                userActiveTickets.delete(ticket.userId);
+            }
+            deletedCount++;
+        }
+    }
+    
+    if (deletedCount > 0) {
+        console.log(`🗑️ Удалено ${deletedCount} старых тикетов (старше 3 суток)`);
+    }
+}
+
+// Запускаем очистку каждые 6 часов
+setInterval(cleanupOldTickets, 6 * 60 * 60 * 1000);
+
+// Очистка при запуске
+cleanupOldTickets();
+
 // Проверка, является ли пользователь админом
 function isAdmin(userId) {
     return adminIds.includes(userId);
@@ -80,13 +107,13 @@ function formatTicketForAdmin(ticketId) {
     text += `📅 Создан: ${new Date(ticket.createdAt).toLocaleString('ru-RU')}\n`;
     text += `📊 Статус: ${ticket.status}\n`;
     text += `💬 Сообщений: ${ticket.messages.length}\n\n`;
-    text += `━━━━━━━━━━━━━━━━━━━━\n\n`;
     
     // Показываем все сообщения с нумерацией
     ticket.messages.forEach((msg, index) => {
         const time = new Date(msg.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
         const role = msg.isAdmin ? '👨‍💼 Админ:' : '👤 Игрок:';
-        text += `${index + 1}. ${time} ${role}\n${msg.text}\n\n`;
+        const content = msg.text || (msg.mediaType ? `[${msg.mediaType}]` : '[медиа]');
+        text += `${index + 1}. ${time} ${role}\n${content}\n\n`;
     });
     
     return text;
@@ -141,6 +168,19 @@ bot.on('message', async (msg) => {
 bot.on('message', async (msg) => {
     if (msg.text === '📧 Создать новый тикет' && !isAdmin(msg.chat.id)) {
         const userId = msg.chat.id;
+        
+        // Проверка лимита активных тикетов (максимум 3)
+        const userTicketsCount = Array.from(tickets.values())
+            .filter(t => t.userId === userId && t.status === 'Открыт').length;
+        
+        if (userTicketsCount >= 3) {
+            bot.sendMessage(userId, 
+                `⚠️ Вы достигли лимита активных тикетов (3)!\n\n` +
+                'Пожалуйста, дождитесь закрытия текущих тикетов перед созданием нового.',
+                getUserMenu()
+            );
+            return;
+        }
         
         // Проверка на существующий открытый тикет
         if (userActiveTickets.has(userId)) {
