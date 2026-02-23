@@ -45,7 +45,8 @@ function getAdminMenu() {
     return {
         reply_markup: {
             keyboard: [
-                [{ text: '📋 Все тикеты' }],
+                [{ text: '� Открытые тикеты' }, { text: '🔴 Закрытые тикеты' }],
+                [{ text: '🚫 Заблокированные пользователи' }],
                 [{ text: '📊 Статистика' }]
             ],
             resize_keyboard: true
@@ -209,7 +210,74 @@ bot.on('message', (msg) => {
 
 // ============= ОБРАБОТЧИКИ ДЛЯ АДМИНОВ =============
 
-// Кнопка "Все тикеты"
+// Кнопка "Открытые тикеты"
+bot.on('message', async (msg) => {
+    if (msg.text === '🟢 Открытые тикеты' && isAdmin(msg.chat.id)) {
+        const openTickets = Array.from(tickets.entries()).filter(([, t]) => t.status === 'Открыт');
+        
+        if (openTickets.length === 0) {
+            bot.sendMessage(msg.chat.id, '📭 Нет открытых тикетов', getAdminMenu());
+            return;
+        }
+        
+        let text = '🟢 Открытые тикеты:\n\n';
+        openTickets.forEach(([ticketId, ticket]) => {
+            text += `🎫 #${ticketId} - ${ticket.username}\n`;
+            text += `💬 Сообщений: ${ticket.messages.length}\n\n`;
+        });
+        
+        const keyboard = [];
+        openTickets.forEach(([ticketId]) => {
+            keyboard.push([{ text: `📂 Открыть тикет #${ticketId}`, callback_data: `admin_open_${ticketId}` }]);
+        });
+        keyboard.push([{ text: '🔙 Главное меню', callback_data: 'admin_main_menu' }]);
+        
+        bot.sendMessage(msg.chat.id, text, {
+            reply_markup: { inline_keyboard: keyboard }
+        });
+    }
+});
+
+// Кнопка "Закрытые тикеты"
+bot.on('message', async (msg) => {
+    if (msg.text === '🔴 Закрытые тикеты' && isAdmin(msg.chat.id)) {
+        const closedTickets = Array.from(tickets.entries()).filter(([, t]) => t.status === 'Закрыт');
+        
+        if (closedTickets.length === 0) {
+            bot.sendMessage(msg.chat.id, '📭 Нет закрытых тикетов', getAdminMenu());
+            return;
+        }
+        
+        let text = '🔴 Закрытые тикеты (последние 10):\n\n';
+        closedTickets.slice(-10).forEach(([ticketId, ticket]) => {
+            text += `🎫 #${ticketId} - ${ticket.username}\n`;
+            text += `💬 Сообщений: ${ticket.messages.length}\n\n`;
+        });
+        
+        const keyboard = [];
+        closedTickets.slice(-10).forEach(([ticketId]) => {
+            keyboard.push([{ text: `📂 Открыть тикет #${ticketId}`, callback_data: `admin_open_${ticketId}` }]);
+        });
+        keyboard.push([{ text: '🔙 Главное меню', callback_data: 'admin_main_menu' }]);
+        
+        bot.sendMessage(msg.chat.id, text, {
+            reply_markup: { inline_keyboard: keyboard }
+        });
+    }
+});
+
+// Кнопка "Заблокированные пользователи"
+bot.on('message', async (msg) => {
+    if (msg.text === '🚫 Заблокированные пользователи' && isAdmin(msg.chat.id)) {
+        bot.sendMessage(msg.chat.id, 
+            '🚫 Функция блокировки пользователей\n\n' +
+            'В разработке...',
+            getAdminMenu()
+        );
+    }
+});
+
+// Кнопка "Все тикеты" (старая, оставляем для совместимости)
 bot.on('message', async (msg) => {
     if (msg.text === '📋 Все тикеты' && isAdmin(msg.chat.id)) {
         const allTickets = Array.from(tickets.entries());
@@ -279,7 +347,7 @@ bot.on('message', async (msg) => {
     
     // Игнорируем команды и кнопки
     if (msg.text && (msg.text.startsWith('/') || 
-        ['📋 Ваши тикеты', '📧 Создать новый тикет', '🔙 Главное меню', '📋 Все тикеты', '📊 Статистика'].includes(msg.text))) {
+        ['📋 Ваши тикеты', '📧 Создать новый тикет', '🔙 Главное меню', '📋 Все тикеты', '📊 Статистика', '🟢 Открытые тикеты', '🔴 Закрытые тикеты', '🚫 Заблокированные пользователи'].includes(msg.text))) {
         return;
     }
     
@@ -301,7 +369,7 @@ bot.on('message', async (msg) => {
                 // Отправляем пользователю
                 bot.sendMessage(ticket.userId,
                     `📨 Ответ от администрации:\n\n` +
-                    `Админ: "${msg.text}"`,
+                    `Админ: ${msg.text}`,
                     getUserMenu()
                 );
                 
