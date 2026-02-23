@@ -368,19 +368,67 @@ bot.on('message', async (msg) => {
             const ticket = tickets.get(ticketId);
             
             if (ticket) {
+                // Определяем тип медиа
+                let mediaType = null;
+                let mediaFileId = null;
+                let messageText = msg.text || '';
+                
+                if (msg.photo) {
+                    mediaType = 'photo';
+                    mediaFileId = msg.photo[msg.photo.length - 1].file_id;
+                    messageText = msg.caption || '[Фото]';
+                } else if (msg.video) {
+                    mediaType = 'video';
+                    mediaFileId = msg.video.file_id;
+                    messageText = msg.caption || '[Видео]';
+                } else if (msg.document) {
+                    mediaType = 'document';
+                    mediaFileId = msg.document.file_id;
+                    messageText = msg.caption || `[Файл: ${msg.document.file_name || 'документ'}]`;
+                } else if (msg.animation) {
+                    mediaType = 'animation';
+                    mediaFileId = msg.animation.file_id;
+                    messageText = msg.caption || '[GIF]';
+                } else if (msg.sticker) {
+                    mediaType = 'sticker';
+                    mediaFileId = msg.sticker.file_id;
+                    messageText = '[Стикер]';
+                }
+                
                 // Добавляем сообщение админа в тикет
                 ticket.messages.push({
-                    text: msg.text,
+                    text: messageText,
+                    mediaType,
+                    mediaFileId,
                     isAdmin: true,
                     timestamp: Date.now()
                 });
                 
                 // Отправляем пользователю
-                bot.sendMessage(ticket.userId,
-                    `📨 Ответ от администрации:\n\n` +
-                    `Админ: ${msg.text}`,
-                    getUserMenu()
-                );
+                const responseText = `📨 Ответ от администрации:\n\nАдмин: ${messageText}`;
+                
+                if (mediaType && mediaFileId) {
+                    // Отправляем медиа
+                    try {
+                        if (mediaType === 'photo') {
+                            await bot.sendPhoto(ticket.userId, mediaFileId, { caption: responseText });
+                        } else if (mediaType === 'video') {
+                            await bot.sendVideo(ticket.userId, mediaFileId, { caption: responseText });
+                        } else if (mediaType === 'document') {
+                            await bot.sendDocument(ticket.userId, mediaFileId, { caption: responseText });
+                        } else if (mediaType === 'animation') {
+                            await bot.sendAnimation(ticket.userId, mediaFileId, { caption: responseText });
+                        } else if (mediaType === 'sticker') {
+                            await bot.sendSticker(ticket.userId, mediaFileId);
+                            await bot.sendMessage(ticket.userId, responseText, getUserMenu());
+                        }
+                    } catch (error) {
+                        console.error('Error sending media:', error);
+                        await bot.sendMessage(ticket.userId, responseText, getUserMenu());
+                    }
+                } else {
+                    await bot.sendMessage(ticket.userId, responseText, getUserMenu());
+                }
                 
                 // Подтверждение админу
                 bot.sendMessage(userId, `✅ Ответ отправлен пользователю в тикете #${ticketId}`);
@@ -404,9 +452,38 @@ bot.on('message', async (msg) => {
         const ticket = tickets.get(ticketId);
         
         if (ticket && ticket.status === 'Открыт') {
+            // Определяем тип медиа
+            let mediaType = null;
+            let mediaFileId = null;
+            let messageText = msg.text || '';
+            
+            if (msg.photo) {
+                mediaType = 'photo';
+                mediaFileId = msg.photo[msg.photo.length - 1].file_id;
+                messageText = msg.caption || '[Фото]';
+            } else if (msg.video) {
+                mediaType = 'video';
+                mediaFileId = msg.video.file_id;
+                messageText = msg.caption || '[Видео]';
+            } else if (msg.document) {
+                mediaType = 'document';
+                mediaFileId = msg.document.file_id;
+                messageText = msg.caption || `[Файл: ${msg.document.file_name || 'документ'}]`;
+            } else if (msg.animation) {
+                mediaType = 'animation';
+                mediaFileId = msg.animation.file_id;
+                messageText = msg.caption || '[GIF]';
+            } else if (msg.sticker) {
+                mediaType = 'sticker';
+                mediaFileId = msg.sticker.file_id;
+                messageText = '[Стикер]';
+            }
+            
             // Добавляем сообщение в тикет
             ticket.messages.push({
-                text: msg.text,
+                text: messageText,
+                mediaType,
+                mediaFileId,
                 isAdmin: false,
                 timestamp: Date.now()
             });
@@ -414,19 +491,77 @@ bot.on('message', async (msg) => {
             bot.sendMessage(userId, '✅ Ваше сообщение отправлено администрации!');
             
             // Уведомляем админов
-            adminIds.forEach(adminId => {
-                bot.sendMessage(adminId,
-                    `💬 Новое сообщение в тикете #${ticketId}\n` +
-                    `👤 От: ${ticket.username}\n\n` +
-                    `"${msg.text}"`,
-                    {
+            adminIds.forEach(async (adminId) => {
+                const notificationText = `💬 Новое сообщение в тикете #${ticketId}\n👤 От: ${ticket.username}\n\n${messageText}`;
+                
+                if (mediaType && mediaFileId) {
+                    // Отправляем медиа админу
+                    try {
+                        if (mediaType === 'photo') {
+                            await bot.sendPhoto(adminId, mediaFileId, { 
+                                caption: notificationText,
+                                reply_markup: {
+                                    inline_keyboard: [[
+                                        { text: '📂 Открыть тикет', callback_data: `admin_open_${ticketId}` }
+                                    ]]
+                                }
+                            });
+                        } else if (mediaType === 'video') {
+                            await bot.sendVideo(adminId, mediaFileId, { 
+                                caption: notificationText,
+                                reply_markup: {
+                                    inline_keyboard: [[
+                                        { text: '📂 Открыть тикет', callback_data: `admin_open_${ticketId}` }
+                                    ]]
+                                }
+                            });
+                        } else if (mediaType === 'document') {
+                            await bot.sendDocument(adminId, mediaFileId, { 
+                                caption: notificationText,
+                                reply_markup: {
+                                    inline_keyboard: [[
+                                        { text: '📂 Открыть тикет', callback_data: `admin_open_${ticketId}` }
+                                    ]]
+                                }
+                            });
+                        } else if (mediaType === 'animation') {
+                            await bot.sendAnimation(adminId, mediaFileId, { 
+                                caption: notificationText,
+                                reply_markup: {
+                                    inline_keyboard: [[
+                                        { text: '📂 Открыть тикет', callback_data: `admin_open_${ticketId}` }
+                                    ]]
+                                }
+                            });
+                        } else if (mediaType === 'sticker') {
+                            await bot.sendSticker(adminId, mediaFileId);
+                            await bot.sendMessage(adminId, notificationText, {
+                                reply_markup: {
+                                    inline_keyboard: [[
+                                        { text: '📂 Открыть тикет', callback_data: `admin_open_${ticketId}` }
+                                    ]]
+                                }
+                            });
+                        }
+                    } catch (error) {
+                        console.error('Error sending media to admin:', error);
+                        bot.sendMessage(adminId, notificationText, {
+                            reply_markup: {
+                                inline_keyboard: [[
+                                    { text: '📂 Открыть тикет', callback_data: `admin_open_${ticketId}` }
+                                ]]
+                            }
+                        });
+                    }
+                } else {
+                    bot.sendMessage(adminId, notificationText, {
                         reply_markup: {
                             inline_keyboard: [[
                                 { text: '📂 Открыть тикет', callback_data: `admin_open_${ticketId}` }
                             ]]
                         }
-                    }
-                );
+                    });
+                }
             });
         }
     }
