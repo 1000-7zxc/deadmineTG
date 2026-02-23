@@ -62,7 +62,7 @@ function getAdminTicketMenu(ticketId) {
             inline_keyboard: [
                 [
                     { text: '✉️ Ответить', callback_data: `admin_reply_${ticketId}` },
-                    { text: '✅ Закрыть', callback_data: `admin_close_${ticketId}` }
+                    { text: '❌ Закрыть', callback_data: `admin_close_${ticketId}` }
                 ],
                 [{ text: '🔙 К списку тикетов', callback_data: 'admin_tickets_list' }]
             ]
@@ -440,12 +440,12 @@ bot.on('callback_query', async (query) => {
             userActiveTickets.delete(ticket.userId);
             
             bot.sendMessage(ticket.userId,
-                `✅ Ваш тикет #${ticketId} был закрыт администрацией.\n\n` +
+                `❌ Ваш тикет #${ticketId} был закрыт администрацией.\n\n` +
                 `Спасибо за обращение!`,
                 getUserMenu()
             );
             
-            bot.sendMessage(adminId, `✅ Тикет #${ticketId} закрыт`, getAdminMenu());
+            bot.sendMessage(adminId, `❌ Тикет #${ticketId} закрыт`, getAdminMenu());
             bot.answerCallbackQuery(query.id, { text: 'Тикет закрыт!' });
         }
     }
