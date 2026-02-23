@@ -75,22 +75,18 @@ function formatTicketForAdmin(ticketId) {
     const ticket = tickets.get(ticketId);
     if (!ticket) return null;
     
-    let text = `🎫 Тикет #${ticketId}\n`;
+    let text = `📋 История тикета #${ticketId}\n\n`;
     text += `👤 Пользователь: ${ticket.username} (ID: ${ticket.userId})\n`;
     text += `📅 Создан: ${new Date(ticket.createdAt).toLocaleString('ru-RU')}\n`;
     text += `📊 Статус: ${ticket.status}\n`;
     text += `💬 Сообщений: ${ticket.messages.length}\n\n`;
     text += `━━━━━━━━━━━━━━━━━━━━\n\n`;
     
-    // Показываем последние 10 сообщений
-    const recentMessages = ticket.messages.slice(-10);
-    recentMessages.forEach(msg => {
+    // Показываем все сообщения с нумерацией
+    ticket.messages.forEach((msg, index) => {
         const time = new Date(msg.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-        if (msg.isAdmin) {
-            text += `🔹 [${time}] Админ:\n${msg.text}\n\n`;
-        } else {
-            text += `🔸 [${time}] Пользователь:\n${msg.text}\n\n`;
-        }
+        const role = msg.isAdmin ? '👨‍💼 Админ:' : '👤 Игрок:';
+        text += `${index + 1}. ${time} ${role}\n${msg.text}\n\n`;
     });
     
     return text;
